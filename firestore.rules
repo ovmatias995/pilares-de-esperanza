@@ -1,0 +1,126 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Verifica si el usuario autenticado está registrado como personal administrativo
+    function esAdmin() {
+      return request.auth != null &&
+             exists(/databases/$(database)/documents/administradores/$(request.auth.uid));
+    }
+
+    function diasHabiles() {
+      return ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes'];
+    }
+
+    // Forma exacta que debe tener un turno nuevo. Exige que el documento público de ocupación
+    // (`ocupados/{turnoId}`) se cree en la misma operación (writeBatch / transacción).
+    function turnoNuevoValido(turnoId) {
+      let t = request.resource.data;
+      return t.keys().hasOnly(['id', 'pacienteUid', 'pacienteDni', 'profesionalId', 'profesional',
+                               'especialidad', 'fecha', 'hora', 'estado', 'creadoEn']) &&
+             t.keys().hasAll(['id', 'pacienteUid', 'pacienteDni', 'profesionalId', 'profesional',
+                              'especialidad', 'fecha', 'hora', 'estado', 'creadoEn']) &&
+             turnoId.matches('^[A-Za-z0-9_-]+$') &&
+             t.id == turnoId &&
+             t.pacienteUid is string && t.pacienteDni is string &&
+             t.profesionalId is string && t.profesional is string &&
+             t.especialidad is string && t.creadoEn is string &&
+             t.fecha in diasHabiles() &&
+             t.hora is string && t.hora.matches('^[0-9]{2}:[0-9]{2}( AM)?$') &&
+             t.estado == 'reservado' &&
+             existsAfter(/databases/$(database)/documents/ocupados/$(turnoId));
+    }
+
+    // Colección de Administradores: cada admin solo puede leer su propio registro; nadie escribe desde el cliente
+    match /administradores/{adminId} {
+      allow read: if request.auth != null && request.auth.uid == adminId;
+      allow write: if false;
+    }
+
+    // Colección de Pacientes: el paciente accede solo a su ficha; el administrativo tiene acceso total
+    match /pacientes/{userId} {
+      allow read, write: if request.auth != null && (request.auth.uid == userId || esAdmin());
+    }
+
+    // Colección de Turnos (contiene datos personales: DNI y UID del paciente)
+    match /turnos/{turnoId} {
+      // El paciente solo lee sus propios turnos; el administrativo lee todos
+      allow read: if request.auth != null &&
+                  (esAdmin() || resource.data.pacienteUid == request.auth.uid);
+
+      // El paciente solo crea turnos a su propio UID y con el correo verificado; el admin puede agendar
+      // para cualquiera. El turno debe ser 'reservado', con campos y tipos exactos y con su documento de ocupación.
+      allow create: if request.auth != null &&
+                    ((request.resource.data.pacienteUid == request.auth.uid &&
+                      request.auth.token.email_verified == true) || esAdmin()) &&
+                    turnoNuevoValido(turnoId);
+
+      // Solo el personal administrativo puede cambiar el estado (y únicamente ese campo)
+      allow update: if esAdmin() &&
+                    request.resource.data.diff(resource.data).affectedKeys().hasOnly(['estado']) &&
+                    request.resource.data.estado in ['reservado', 'completado', 'cancelado'];
+
+      // El paciente solo cancela sus propios turnos; el admin puede liberar cualquier horario.
+      // Debe eliminarse junto con su documento de ocupación.
+      allow delete: if request.auth != null &&
+                    (esAdmin() || resource.data.pacienteUid == request.auth.uid) &&
+                    !existsAfter(/databases/$(database)/documents/ocupados/$(turnoId));
+    }
+
+    // Solicitudes de Certificado Único de Discapacidad (CUD). El ID del documento es el UID del paciente:
+    // solo puede existir una por paciente. El paciente la crea (con el correo verificado) y la lee; la
+    // administración lee todas y gestiona su estado. Nadie la elimina desde el cliente.
+    match /solicitudCUD/{pacienteUid} {
+      allow read: if request.auth != null && (esAdmin() || request.auth.uid == pacienteUid);
+
+      allow create: if request.auth != null &&
+                    request.auth.uid == pacienteUid &&
+                    request.auth.token.email_verified == true &&
+                    request.resource.data.keys().hasOnly(['pacienteUid', 'pacienteDni', 'estado', 'creadoEn']) &&
+                    request.resource.data.keys().hasAll(['pacienteUid', 'pacienteDni', 'estado', 'creadoEn']) &&
+                    request.resource.data.pacienteUid == pacienteUid &&
+                    request.resource.data.pacienteDni is string &&
+                    request.resource.data.creadoEn is string &&
+                    request.resource.data.estado == 'pendiente';
+
+      // Solo la administración cambia el estado del trámite (y únicamente esos campos). Al aprobar debe
+      // indicar la fecha (AAAA-MM-DD) y la hora (HH:MM) de la Junta Evaluadora.
+      allow update: if esAdmin() &&
+                    request.resource.data.diff(resource.data).affectedKeys()
+                      .hasOnly(['estado', 'fechaJunta', 'horaJunta', 'actualizadoEn']) &&
+                    request.resource.data.estado in ['pendiente', 'aprobada', 'rechazada'] &&
+                    (request.resource.data.estado != 'aprobada' ||
+                     (request.resource.data.get('fechaJunta', '') is string &&
+                      request.resource.data.get('fechaJunta', '').matches('^[0-9]{4}-[0-9]{2}-[0-9]{2}$') &&
+                      request.resource.data.get('horaJunta', '') is string &&
+                      request.resource.data.get('horaJunta', '').matches('^[0-9]{2}:[0-9]{2}$')));
+
+      allow delete: if false;
+    }
+
+    // Ocupación pública de horarios (SIN datos personales). Permite a cualquier usuario autenticado
+    // saber qué horarios están tomados. El ID es el mismo que el del turno.
+    match /ocupados/{turnoId} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null &&
+                    request.resource.data.keys().hasOnly(['id', 'profesionalId', 'profesional', 'especialidad', 'fecha', 'hora']) &&
+                    request.resource.data.id == turnoId &&
+                    existsAfter(/databases/$(database)/documents/turnos/$(turnoId)) &&
+                    getAfter(/databases/$(database)/documents/turnos/$(turnoId)).data.profesionalId == request.resource.data.profesionalId &&
+                    getAfter(/databases/$(database)/documents/turnos/$(turnoId)).data.profesional == request.resource.data.profesional &&
+                    getAfter(/databases/$(database)/documents/turnos/$(turnoId)).data.especialidad == request.resource.data.especialidad &&
+                    getAfter(/databases/$(database)/documents/turnos/$(turnoId)).data.fecha == request.resource.data.fecha &&
+                    getAfter(/databases/$(database)/documents/turnos/$(turnoId)).data.hora == request.resource.data.hora;
+
+      allow update: if false;
+
+      // Solo se libera cuando el turno asociado se elimina en la misma operación
+      allow delete: if request.auth != null &&
+                    !existsAfter(/databases/$(database)/documents/turnos/$(turnoId)) &&
+                    (esAdmin() ||
+                     (exists(/databases/$(database)/documents/turnos/$(turnoId)) &&
+                      get(/databases/$(database)/documents/turnos/$(turnoId)).data.pacienteUid == request.auth.uid));
+    }
+  }
+}
