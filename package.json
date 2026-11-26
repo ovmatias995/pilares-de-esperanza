@@ -1,0 +1,43 @@
+{
+  "name": "backend-pilares",
+  "version": "1.0.0",
+  "description": "",
+  "main": "expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "verify:arch": "node scripts/verificar-arquitectura.mjs",
+    "qr": "node scripts/generar-qr.mjs",
+    "desplegar:web": "node scripts/desplegar-web.mjs",
+    "test:logica": "node --test tests/recordatorios.test.mjs tests/mapa.test.mjs",
+    "test": "npm run verify:arch && npm run test:logica && npm run test:rules",
+    "test:rules": "npx firebase-tools emulators:exec --only firestore --project demo-pilares \"node --test tests/firestore.rules.test.mjs\""
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@expo/vector-icons": "^15.0.2",
+    "@react-native-async-storage/async-storage": "2.2.0",
+    "expo": "~58.0.25",
+    "expo-build-properties": "~58.0.12",
+    "expo-camera": "~58.0.14",
+    "expo-constants": "~58.0.16",
+    "expo-font": "~58.0.12",
+    "expo-linear-gradient": "~58.0.4",
+    "expo-location": "~58.0.22",
+    "expo-notifications": "~58.1.9",
+    "expo-splash-screen": "~58.0.14",
+    "firebase": "^13.3.0",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-safe-area-context": "~5.11.1"
+  },
+  "devDependencies": {
+    "@expo/ngrok": "^4.1.0",
+    "@firebase/rules-unit-testing": "^6.0.0",
+    "@types/react": "~19.3.0",
+    "qrcode": "^1.5.4",
+    "typescript": "~6.0.3"
+  }
+}
