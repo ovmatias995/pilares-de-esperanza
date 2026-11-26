@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#143D36" />
+    <title>Descargar Pilares de Esperanza</title>
+    <link rel="icon" type="image/png" href="/icon-192.png" />
+    <style>
+      :root { --verde: #143d36; --verde-claro: #1f6b5c; --fondo: #f1f6f4; --texto: #0b2622; }
+      * { box-sizing: border-box; }
+      body { margin: 0; font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: var(--fondo); color: var(--texto); }
+      header { background: linear-gradient(135deg, #0b2622, var(--verde-claro)); color: #fff; text-align: center; padding: 40px 20px 64px; border-radius: 0 0 36px 36px; }
+      header img { width: 84px; height: 84px; border-radius: 20px; background: #fff; padding: 6px; }
+      h1 { margin: 14px 0 4px; font-size: 26px; letter-spacing: -0.5px; }
+      header p { margin: 0; opacity: 0.85; }
+      main { max-width: 520px; margin: -36px auto 40px; padding: 0 16px; }
+      .tarjeta { background: #fff; border-radius: 22px; padding: 22px; box-shadow: 0 8px 24px rgba(11, 38, 34, 0.1); margin-bottom: 16px; }
+      .boton { display: block; text-align: center; text-decoration: none; background: linear-gradient(135deg, var(--verde), var(--verde-claro)); color: #fff; font-weight: 800; font-size: 17px; padding: 16px; border-radius: 16px; }
+      ol { padding-left: 20px; line-height: 1.55; margin: 12px 0 0; }
+      small { color: #5b7a74; display: block; margin-top: 12px; line-height: 1.45; }
+      .aviso { display: none; background: #fff6df; color: #6b4a00; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <img src="/icon-192.png" alt="Logo de Pilares de Esperanza" />
+      <h1>Pilares de Esperanza</h1>
+      <p>Gestione sus turnos y trámites desde su teléfono</p>
+    </header>
+    <main>
+      <div class="tarjeta aviso" id="aviso-ios">
+        <strong>Disponible por ahora para Android.</strong> La versión para iPhone estará disponible próximamente.
+      </div>
+      <div class="tarjeta">
+        <!-- El APK no se aloja en Firebase Hosting (el plan Spark prohíbe archivos ejecutables): el script de despliegue
+             reemplaza este marcador por el enlace de distribucion/enlace-apk.txt (por ejemplo, una versión de GitHub). -->
+        <a class="boton" href="__ENLACE_APK__">Descargar para Android</a>
+        <ol>
+          <li>Toque el botón y abra el archivo descargado.</li>
+          <li>Si el teléfono lo solicita, permita la instalación desde esta fuente.</li>
+          <li>Abra <strong>Pilares de Esperanza</strong> y toque <strong>Regístrese aquí</strong> para crear su cuenta de paciente.</li>
+        </ol>
+        <small>Necesitará un correo electrónico válido (se le enviará un enlace de verificación) y su DNI para el registro.</small>
+      </div>
+    </main>
+    <script>
+      if (/iPhone|iPad|iPod/i.test(navigator.userAgent)) document.getElementById("aviso-ios").style.display = "block";
+    </script>
+  </body>
+</html>
