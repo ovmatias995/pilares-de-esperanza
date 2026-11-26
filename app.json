@@ -1,0 +1,76 @@
+{
+  "expo": {
+    "name": "Pilares de Esperanza",
+    "slug": "pilares-de-esperanza",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/app-icon.png",
+    "userInterfaceStyle": "light",
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Pilares de Esperanza necesita la cámara para validar su identidad (DNI y rostro) durante el registro.",
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Pilares de Esperanza necesita su ubicación para validar su domicilio de atención."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#143D36"
+        }
+      ],
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 220,
+          "resizeMode": "contain",
+          "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": false,
+            "enableShrinkResourcesInReleaseBuilds": false
+          }
+        }
+      ]
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "ar.com.pilaresdeesperanza.app"
+    },
+    "android": {
+      "package": "ar.com.pilaresdeesperanza.app",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.POST_NOTIFICATIONS"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/app-icon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "26066ff5-ed26-43f2-ba71-577db1091d7b"
+      }
+    },
+    "owner": "ovmatias995"
+  }
+}
